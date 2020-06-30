@@ -1,0 +1,11 @@
+db:
+  image: mysql:8.0
+  ports:
+    - "3306:3306"
+  environment:
+    MYSQL_ROOT_PASSWORD: root
+    MYSQL_DATABASE: ECSite
+    MYSQL_USER: user
+    MYSQL_PASSWORD: root
+  security_opt:
+      - seccomp:unconfined
