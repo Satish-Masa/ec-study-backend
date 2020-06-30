@@ -1,9 +1,11 @@
 package interfaces
 
 import (
+	"fmt"
 	"net/http"
 
 	AppUser "github.com/Satish-Masa/ec-backend/application/user"
+	"github.com/Satish-Masa/ec-backend/config"
 	domainUser "github.com/Satish-Masa/ec-backend/domain/user"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -83,4 +85,5 @@ func (r Rest) Start() {
 	auth := e.Group("/auth")
 	auth.Use(middleware.JWTWithConfig(Config))
 	auth.POST("/login", r.findHandler)
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.Config.Port)))
 }
