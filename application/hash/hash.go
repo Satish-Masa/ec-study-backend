@@ -1,4 +1,4 @@
-package interfaces
+package passhash
 
 import "golang.org/x/crypto/bcrypt"
 

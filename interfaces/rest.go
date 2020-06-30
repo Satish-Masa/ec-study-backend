@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	UserAuth "github.com/Satish-Masa/ec-backend/application/auth"
+	passhash "github.com/Satish-Masa/ec-backend/application/hash"
 	AppUser "github.com/Satish-Masa/ec-backend/application/user"
 	"github.com/Satish-Masa/ec-backend/config"
 	domainUser "github.com/Satish-Masa/ec-backend/domain/user"
@@ -24,7 +26,7 @@ func (r Rest) createHandler(c echo.Context) error {
 		}
 	}
 
-	pass, err := UserPassHash(req.Password)
+	pass, err := passhash.UserPassHash(req.Password)
 	if err != nil {
 		return err
 	}
@@ -37,7 +39,7 @@ func (r Rest) createHandler(c echo.Context) error {
 
 	err = application.SaveUser(u)
 
-	resp, err := FetchToken(u)
+	resp, err := UserAuth.FetchToken(u)
 	if err != nil {
 		return err
 	}
@@ -51,7 +53,7 @@ func (r Rest) findHandler(c echo.Context) error {
 		return nil
 	}
 
-	uid := FindUserID(c)
+	uid := UserAuth.FindUserID(c)
 
 	application := AppUser.UserApplication{
 		Repository: r.UserRepository,
@@ -62,7 +64,7 @@ func (r Rest) findHandler(c echo.Context) error {
 		return err
 	}
 
-	ok := UserPassMach(u.Password, req.Password)
+	ok := passhash.UserPassMach(u.Password, req.Password)
 
 	resp := new(AppUser.UserLoginResponce)
 	if ok {
@@ -83,7 +85,7 @@ func (r Rest) Start() {
 	e.POST("/user/create", r.createHandler)
 
 	auth := e.Group("/auth")
-	auth.Use(middleware.JWTWithConfig(Config))
+	auth.Use(middleware.JWTWithConfig(UserAuth.Config))
 	auth.POST("/login", r.findHandler)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.Config.Port)))
 }
