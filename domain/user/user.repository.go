@@ -2,5 +2,6 @@ package user
 
 type UserRepository interface {
 	Save(*User) error
-	Find(int) (User, error)
+	Find(string) (User, error)
+	FindEmail(string) bool
 }
