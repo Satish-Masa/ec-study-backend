@@ -42,7 +42,7 @@ func (r Rest) signupHandler(c echo.Context) error {
 	ok := application.FindEmail(req.Email)
 	if ok {
 		resp.Result = "find user email"
-		return c.JSON(http.StatusOK, resp)
+		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
 	err = application.SaveUser(u)
@@ -70,7 +70,7 @@ func (r Rest) loginHandler(c echo.Context) error {
 	u, err := application.FindUser(req.Email)
 	if err != nil {
 		resp.Token = "not correct email"
-		return c.JSON(http.StatusOK, resp)
+		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
 	ok := passhash.UserPassMach(u.Password, req.Password)
