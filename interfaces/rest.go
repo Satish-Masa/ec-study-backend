@@ -1,9 +1,13 @@
 package interfaces
 
 import (
+	"fmt"
 	"net/http"
 
+	UserAuth "github.com/Satish-Masa/ec-backend/application/auth"
+	passhash "github.com/Satish-Masa/ec-backend/application/hash"
 	AppUser "github.com/Satish-Masa/ec-backend/application/user"
+	"github.com/Satish-Masa/ec-backend/config"
 	domainUser "github.com/Satish-Masa/ec-backend/domain/user"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -13,7 +17,7 @@ type Rest struct {
 	UserRepository domainUser.UserRepository
 }
 
-func (r Rest) createHandler(c echo.Context) error {
+func (r Rest) signupHandler(c echo.Context) error {
 	req := new(AppUser.UserCreateRequest)
 	if err := c.Bind(req); err != nil {
 		return &echo.HTTPError{
@@ -22,52 +26,60 @@ func (r Rest) createHandler(c echo.Context) error {
 		}
 	}
 
-	pass, err := UserPassHash(req.Password)
+	pass, err := passhash.UserPassHash(req.Password)
 	if err != nil {
 		return err
 	}
 
-	u := domainUser.NewUser(req.Name, pass)
+	u := domainUser.NewUser(req.Email, pass)
 
 	application := AppUser.UserApplication{
 		Repository: r.UserRepository,
 	}
 
-	err = application.SaveUser(u)
+	resp := new(AppUser.UserCreateResponce)
 
-	resp, err := FetchToken(u)
-	if err != nil {
-		return err
+	ok := application.FindEmail(req.Email)
+	if ok {
+		resp.Result = "find user email"
+		return c.JSON(http.StatusBadRequest, resp)
 	}
+
+	err = application.SaveUser(u)
+	if err != nil {
+		resp.Result = "failed to save user"
+		return c.JSON(http.StatusInternalServerError, resp)
+	}
+
+	resp.Result = "success"
 
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (r Rest) findHandler(c echo.Context) error {
+func (r Rest) loginHandler(c echo.Context) error {
 	req := new(AppUser.UserLoginRequest)
+	resp := new(AppUser.UserLoginResponce)
 	if err := c.Bind(req); err != nil {
-		return nil
+		return err
 	}
-
-	uid := FindUserID(c)
 
 	application := AppUser.UserApplication{
 		Repository: r.UserRepository,
 	}
 
-	u, err := application.FindUser(uid)
+	u, err := application.FindUser(req.Email)
 	if err != nil {
-		return err
+		resp.Token = "not correct email"
+		return c.JSON(http.StatusBadRequest, resp)
 	}
 
-	ok := UserPassMach(u.Password, req.Password)
-
-	resp := new(AppUser.UserLoginResponce)
-	if ok {
-		resp.Result = "succese"
-	} else {
-		resp.Result = "failed"
+	ok := passhash.UserPassMach(u.Password, req.Password)
+	if !ok {
+		resp.Token = "not correct password"
 	}
+
+	token, err := UserAuth.FetchToken(&u)
+	resp.Token = token
 
 	return c.JSON(http.StatusOK, resp)
 }
@@ -75,12 +87,14 @@ func (r Rest) findHandler(c echo.Context) error {
 func (r Rest) Start() {
 	e := echo.New()
 
+	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.POST("/user/create", r.createHandler)
+	e.POST("/auth/signup", r.signupHandler)
+	e.POST("/auth/login", r.loginHandler)
 
 	auth := e.Group("/auth")
-	auth.Use(middleware.JWTWithConfig(Config))
-	auth.POST("/login", r.findHandler)
+	auth.Use(middleware.JWTWithConfig(UserAuth.Config))
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.Config.Port)))
 }

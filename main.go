@@ -9,6 +9,7 @@ import (
 	"github.com/Satish-Masa/ec-backend/infrastructure"
 	"github.com/Satish-Masa/ec-backend/interfaces"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 func init() {

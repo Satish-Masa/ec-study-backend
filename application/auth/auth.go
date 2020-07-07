@@ -1,10 +1,9 @@
-package interfaces
+package auth
 
 import (
 	"net/http"
 	"time"
 
-	"github.com/Satish-Masa/ec-backend/application/user"
 	domainUser "github.com/Satish-Masa/ec-backend/domain/user"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
@@ -24,9 +23,9 @@ var Config = middleware.JWTConfig{
 	SigningKey: signingKey,
 }
 
-func createToken(u *domainUser.User) (user.UserCreateResponce, error) {
-	if u.Name == "" {
-		return user.UserCreateResponce{}, &echo.HTTPError{
+func createToken(u *domainUser.User) (string, error) {
+	if u.Email == "" {
+		return "", &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
 			Message: "invalid name",
 		}
@@ -34,7 +33,7 @@ func createToken(u *domainUser.User) (user.UserCreateResponce, error) {
 
 	claims := &jwtCustomClaims{
 		u.ID,
-		u.Name,
+		u.Email,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
 		},
@@ -44,22 +43,19 @@ func createToken(u *domainUser.User) (user.UserCreateResponce, error) {
 
 	t, err := token.SignedString(signingKey)
 	if err != nil {
-		return user.UserCreateResponce{}, &echo.HTTPError{
+		return "", &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed to create the token",
 		}
 	}
 
-	resp := new(user.UserCreateResponce)
-	resp.Token = t
-
-	return *resp, nil
+	return t, nil
 }
 
-func FetchToken(u *domainUser.User) (resp user.UserCreateResponce, err error) {
+func FetchToken(u *domainUser.User) (resp string, err error) {
 	resp, err = createToken(u)
 	if err != nil {
-		return user.UserCreateResponce{}, err
+		return "", err
 	}
 
 	return resp, nil

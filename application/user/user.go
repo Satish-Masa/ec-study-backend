@@ -7,27 +7,31 @@ type UserApplication struct {
 }
 
 type UserCreateRequest struct {
-	Name     string `json: "name"`
+	Email    string `json: "email"`
 	Password string `json: "password"`
 }
 
 type UserCreateResponce struct {
-	Token string `json: "token"`
+	Result string `json: "result"`
 }
 
 type UserLoginRequest struct {
-	Name     string `json: "name"`
+	Email    string `json: "email"`
 	Password string `json: "password"`
 }
 
 type UserLoginResponce struct {
-	Result string `json: "result"`
+	Token string `json: "token"`
 }
 
 func (a UserApplication) SaveUser(u *domainUser.User) error {
 	return a.Repository.Save(u)
 }
 
-func (a UserApplication) FindUser(id int) (domainUser.User, error) {
-	return a.Repository.Find(id)
+func (a UserApplication) FindUser(email string) (domainUser.User, error) {
+	return a.Repository.Find(email)
+}
+
+func (a UserApplication) FindEmail(email string) bool {
+	return a.Repository.FindEmail(email)
 }

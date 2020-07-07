@@ -21,11 +21,20 @@ func (i *userRepository) Save(u *domainUser.User) error {
 	return nil
 }
 
-func (i *userRepository) Find(id int) (domainUser.User, error) {
+func (i *userRepository) Find(email string) (domainUser.User, error) {
 	var user domainUser.User
-	err := i.conn.First(&user, "id = ?", id).Error
+	err := i.conn.First(&user, "email = ?", email).Error
 	if err != nil {
 		return domainUser.User{}, err
 	}
 	return user, nil
+}
+
+func (i *userRepository) FindEmail(email string) bool {
+	var user domainUser.User
+	err := i.conn.First(&user, "email = ?", email).Error
+	if err != nil {
+		return false
+	}
+	return true
 }
