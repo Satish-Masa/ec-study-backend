@@ -24,7 +24,7 @@ var Config = middleware.JWTConfig{
 }
 
 func createToken(u *domainUser.User) (string, error) {
-	if u.Name == "" {
+	if u.Email == "" {
 		return "", &echo.HTTPError{
 			Code:    http.StatusUnauthorized,
 			Message: "invalid name",
@@ -33,7 +33,7 @@ func createToken(u *domainUser.User) (string, error) {
 
 	claims := &jwtCustomClaims{
 		u.ID,
-		u.Name,
+		u.Email,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
 		},
