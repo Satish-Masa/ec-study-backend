@@ -87,13 +87,14 @@ func (r Rest) loginHandler(c echo.Context) error {
 func (r Rest) Start() {
 	e := echo.New()
 
+	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
 	e.POST("/auth/signup", r.signupHandler)
+	e.POST("/auth/login", r.loginHandler)
 
 	auth := e.Group("/auth")
 	auth.Use(middleware.JWTWithConfig(UserAuth.Config))
-	auth.POST("/login", r.loginHandler)
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.Config.Port)))
 }
