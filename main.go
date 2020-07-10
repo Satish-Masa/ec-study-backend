@@ -5,9 +5,9 @@ import (
 	"log"
 
 	"github.com/Satish-Masa/ec-backend/config"
-	domainUser "github.com/Satish-Masa/ec-backend/domain/user"
 	"github.com/Satish-Masa/ec-backend/infrastructure"
 	"github.com/Satish-Masa/ec-backend/interfaces"
+	"github.com/gchaincl/dotsql"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
@@ -26,7 +26,14 @@ func main() {
 	}
 	defer db.Close()
 
-	db.AutoMigrate(&domainUser.User{})
+	dot, err := dotsql.LoadFromFile("db/create_table.sql")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = dot.Exec(db.DB(), "create-users-table")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	user := infrastructure.NewUserRepository(db)
 	rest := &interfaces.Rest{UserRepository: user}
