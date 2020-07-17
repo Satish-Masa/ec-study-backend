@@ -31,6 +31,8 @@ func main() {
 		log.Fatal(err)
 	}
 	_, err = dot.Exec(db.DB(), "create-users-table")
+	_, err = dot.Exec(db.DB(), "create-items-table")
+	_, err = dot.Exec(db.DB(), "create-basket-table")
 	if err != nil {
 		log.Fatal(err)
 	}
