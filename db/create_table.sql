@@ -7,7 +7,7 @@ CREATE TABLE users (
 
 -- name: create-items-table
 CREATE TABLE items (
-    id          INTEGER PRIMARY KEY UNIQUE,
+    id          INTEGER PRIMARY KEY,
     name        VARCHAR(255) NOT NULL,
     description VARCHAR(255),
     price       INTEGER NOT NULL
@@ -15,7 +15,7 @@ CREATE TABLE items (
 
 -- name: create-basket-table
 CREATE TABLE basket (
-    item_id INTEGER UNIQUE NOT NULL,
+    item_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     name    VARCHAR(255) NOT NULL,
     price   INTEGER NOT NULL
