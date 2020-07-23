@@ -3,13 +3,18 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
+
+	domainItem "github.com/Satish-Masa/ec-backend/domain/item"
 
 	"github.com/Satish-Masa/ec-backend/config"
 	"github.com/Satish-Masa/ec-backend/infrastructure"
 	"github.com/Satish-Masa/ec-backend/interfaces"
-	"github.com/gchaincl/dotsql"
+	"github.com/jaswdr/faker"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	migrate "github.com/rubenv/sql-migrate"
 )
 
 func init() {
@@ -26,15 +31,19 @@ func main() {
 	}
 	defer db.Close()
 
-	dot, err := dotsql.LoadFromFile("db/create_table.sql")
+	migrations := &migrate.FileMigrationSource{
+		Dir: "db",
+	}
+	_, err = migrate.Exec(db.DB(), driver, migrations, migrate.Up)
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, err = dot.Exec(db.DB(), "create-users-table")
-	_, err = dot.Exec(db.DB(), "create-items-table")
-	_, err = dot.Exec(db.DB(), "create-basket-table")
-	if err != nil {
-		log.Fatal(err)
+
+	f := faker.New()
+	for i := 0; i < 1000; i++ {
+		rand.Seed(time.Now().UnixNano())
+		item := domainItem.Item{Name: f.Person().Title(), Description: f.Lorem().Text(255), Price: rand.Intn(100000)}
+		db.Create(&item)
 	}
 
 	user := infrastructure.NewUserRepository(db)
