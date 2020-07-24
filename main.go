@@ -29,7 +29,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	migrations := &migrate.FileMigrationSource{
 		Dir: "db",
@@ -38,15 +37,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer migrate.Exec(db.DB(), driver, migrations, migrate.Down)
+	defer db.Close()
 
 	f := faker.New()
 	for i := 0; i < 1000; i++ {
 		rand.Seed(time.Now().UnixNano())
-		item := domainItem.Item{Name: f.Person().Title(), Description: f.Lorem().Text(255), Price: rand.Intn(100000)}
+		item := domainItem.Item{Name: f.Company().Name(), Description: f.Lorem().Text(255), Price: rand.Intn(100000)}
 		db.Create(&item)
 	}
 
 	user := infrastructure.NewUserRepository(db)
-	rest := &interfaces.Rest{UserRepository: user}
+	item := infrastructure.NewItemRepository(db)
+	rest := &interfaces.Rest{
+		UserRepository: user,
+		ItemRepository: item,
+	}
 	rest.Start()
 }
