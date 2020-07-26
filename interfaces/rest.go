@@ -2,12 +2,16 @@ package interfaces
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"strconv"
 
 	UserAuth "github.com/Satish-Masa/ec-backend/application/auth"
 	passhash "github.com/Satish-Masa/ec-backend/application/hash"
+	AppItem "github.com/Satish-Masa/ec-backend/application/item"
 	AppUser "github.com/Satish-Masa/ec-backend/application/user"
 	"github.com/Satish-Masa/ec-backend/config"
+	domainItem "github.com/Satish-Masa/ec-backend/domain/item"
 	domainUser "github.com/Satish-Masa/ec-backend/domain/user"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -15,11 +19,13 @@ import (
 
 type Rest struct {
 	UserRepository domainUser.UserRepository
+	ItemRepository domainItem.ItemRepository
 }
 
 func (r Rest) signupHandler(c echo.Context) error {
 	req := new(AppUser.UserCreateRequest)
 	if err := c.Bind(req); err != nil {
+		log.Fatal(err)
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
 			Message: "failed bind request",
@@ -28,6 +34,7 @@ func (r Rest) signupHandler(c echo.Context) error {
 
 	pass, err := passhash.UserPassHash(req.Password)
 	if err != nil {
+		log.Fatal(err)
 		return err
 	}
 
@@ -47,9 +54,19 @@ func (r Rest) signupHandler(c echo.Context) error {
 
 	err = application.SaveUser(u)
 	if err != nil {
+		log.Fatal(err)
 		resp.Result = "failed to save user"
 		return c.JSON(http.StatusInternalServerError, resp)
 	}
+
+	/*
+		err = mail.SendMail(req.Email)
+		if err != nil {
+			log.Fatal(err)
+			resp.Result = "failed to send mail"
+			return c.JSON(http.StatusInternalServerError, resp)
+		}
+	*/
 
 	resp.Result = "success"
 
@@ -84,6 +101,44 @@ func (r Rest) loginHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+func (r Rest) getItemsHandler(c echo.Context) error {
+	application := AppItem.ItemApplication{
+		Repository: r.ItemRepository,
+	}
+
+	resp, err := application.GetItemList()
+	if err != nil {
+		log.Fatal(err)
+		return c.JSON(http.StatusInternalServerError, err)
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (r Rest) getItemHandler(c echo.Context) error {
+	req := new(AppItem.ItemRequest)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+
+	id, err := strconv.Atoi(req.ID)
+	if err != nil {
+		return err
+	}
+
+	application := AppItem.ItemApplication{
+		Repository: r.ItemRepository,
+	}
+
+	resp, err := application.FindItem(id)
+	if err != nil {
+		log.Println("not find id")
+		return err
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
 func (r Rest) Start() {
 	e := echo.New()
 
@@ -93,6 +148,8 @@ func (r Rest) Start() {
 
 	e.POST("/auth/signup", r.signupHandler)
 	e.POST("/auth/login", r.loginHandler)
+	e.GET("/items/list", r.getItemsHandler)
+	e.POST("/item", r.getItemHandler)
 
 	auth := e.Group("/auth")
 	auth.Use(middleware.JWTWithConfig(UserAuth.Config))
