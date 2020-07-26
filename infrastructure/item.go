@@ -21,3 +21,12 @@ func (i *itemRepository) Get() ([]domainItem.Item, error) {
 	}
 	return items, nil
 }
+
+func (i *itemRepository) Find(id int) (domainItem.Item, error) {
+	var item domainItem.Item
+	err := i.conn.First(&item, "id = ?", id).Error
+	if err != nil {
+		return domainItem.Item{}, err
+	}
+	return item, nil
+}
