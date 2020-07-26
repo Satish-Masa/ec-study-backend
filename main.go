@@ -41,7 +41,7 @@ func main() {
 	defer db.Close()
 
 	f := faker.New()
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100; i++ {
 		rand.Seed(time.Now().UnixNano())
 		item := domainItem.Item{Name: f.Company().Name(), Description: f.Lorem().Text(255), Price: rand.Intn(100000)}
 		db.Create(&item)
