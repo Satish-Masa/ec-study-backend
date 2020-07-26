@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	UserAuth "github.com/Satish-Masa/ec-backend/application/auth"
 	passhash "github.com/Satish-Masa/ec-backend/application/hash"
@@ -114,6 +115,30 @@ func (r Rest) getItemsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+func (r Rest) getItemHandler(c echo.Context) error {
+	req := new(AppItem.ItemRequest)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+
+	id, err := strconv.Atoi(req.ID)
+	if err != nil {
+		return err
+	}
+
+	application := AppItem.ItemApplication{
+		Repository: r.ItemRepository,
+	}
+
+	resp, err := application.FindItem(id)
+	if err != nil {
+		log.Println("not find id")
+		return err
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
 func (r Rest) Start() {
 	e := echo.New()
 
@@ -124,6 +149,7 @@ func (r Rest) Start() {
 	e.POST("/auth/signup", r.signupHandler)
 	e.POST("/auth/login", r.loginHandler)
 	e.GET("/items/list", r.getItemsHandler)
+	e.POST("/item", r.getItemHandler)
 
 	auth := e.Group("/auth")
 	auth.Use(middleware.JWTWithConfig(UserAuth.Config))
