@@ -43,15 +43,17 @@ func main() {
 	f := faker.New()
 	for i := 0; i < 100; i++ {
 		rand.Seed(time.Now().UnixNano())
-		item := domainItem.Item{Name: f.Company().Name(), Description: f.Lorem().Text(255), Price: rand.Intn(100000)}
+		item := domainItem.Item{Name: f.Company().Name(), Description: f.Lorem().Text(255), Price: rand.Intn(100000), Stock: rand.Intn(100)}
 		db.Create(&item)
 	}
 
 	user := infrastructure.NewUserRepository(db)
 	item := infrastructure.NewItemRepository(db)
+	cart := infrastructure.NewCartRepository(db)
 	rest := &interfaces.Rest{
 		UserRepository: user,
 		ItemRepository: item,
+		CartRepository: cart,
 	}
 	rest.Start()
 }
