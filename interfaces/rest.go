@@ -10,6 +10,7 @@ import (
 	AppCart "github.com/Satish-Masa/ec-backend/application/cart"
 	passhash "github.com/Satish-Masa/ec-backend/application/hash"
 	AppItem "github.com/Satish-Masa/ec-backend/application/item"
+	"github.com/Satish-Masa/ec-backend/application/mail"
 	AppUser "github.com/Satish-Masa/ec-backend/application/user"
 	"github.com/Satish-Masa/ec-backend/config"
 	domainCart "github.com/Satish-Masa/ec-backend/domain/cart"
@@ -62,14 +63,12 @@ func (r Rest) signupHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
-	/*
-		err = mail.SendMail(req.Email)
-		if err != nil {
-			log.Fatal(err)
-			resp.Result = "failed to send mail"
-			return c.JSON(http.StatusInternalServerError, resp)
-		}
-	*/
+	err = mail.SendEmail(req.Email)
+	if err != nil {
+		log.Println(err)
+		resp.Result = "Not Send Email"
+		return c.JSON(http.StatusInternalServerError, resp)
+	}
 
 	resp.Result = "success"
 
