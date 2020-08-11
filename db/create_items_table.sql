@@ -4,6 +4,6 @@ CREATE TABLE items (
     name        VARCHAR(255) NOT NULL,
     description VARCHAR(255),
     price       INTEGER NOT NULL,
-    stock       INTEGER NOT NULL,
+    stock       INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (id)
 );
