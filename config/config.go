@@ -22,7 +22,7 @@ type ConfigList struct {
 var Config ConfigList
 
 func Init() {
-	cfg, err := ini.Load("config.ini")
+	cfg, err := ini.Load("secret.ini")
 	if err != nil {
 		log.Printf("Failed to read file: %v", err)
 		os.Exit(1)
