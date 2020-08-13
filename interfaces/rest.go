@@ -11,6 +11,7 @@ import (
 	passhash "github.com/Satish-Masa/ec-backend/application/hash"
 	AppItem "github.com/Satish-Masa/ec-backend/application/item"
 	"github.com/Satish-Masa/ec-backend/application/mail"
+	"github.com/Satish-Masa/ec-backend/application/token"
 	AppUser "github.com/Satish-Masa/ec-backend/application/user"
 	"github.com/Satish-Masa/ec-backend/config"
 	domainCart "github.com/Satish-Masa/ec-backend/domain/cart"
@@ -42,7 +43,9 @@ func (r Rest) signupHandler(c echo.Context) error {
 		return err
 	}
 
-	u := domainUser.NewUser(req.Email, pass)
+	token := token.MakeToken()
+
+	u := domainUser.NewUser(req.Email, pass, token)
 
 	application := AppUser.UserApplication{
 		Repository: r.UserRepository,
@@ -63,7 +66,7 @@ func (r Rest) signupHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
-	err = mail.SendEmail(req.Email)
+	err = mail.SendEmail(req.Email, token)
 	if err != nil {
 		log.Println(err)
 		resp.Result = "Not Send Email"
@@ -101,6 +104,24 @@ func (r Rest) loginHandler(c echo.Context) error {
 	resp.Token = token
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func (r Rest) checkMailHandler(c echo.Context) error {
+	req := new(AppUser.UserMailCheck)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+
+	application := AppUser.UserApplication{
+		Repository: r.UserRepository,
+	}
+
+	err := application.CheckEmail(req.Token)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 func (r Rest) getItemsHandler(c echo.Context) error {
@@ -193,9 +214,35 @@ func (r Rest) CartListHandler(c echo.Context) error {
 		resp = append(resp, item)
 	}
 
-	log.Println(resp)
-
 	return c.JSON(http.StatusOK, resp)
+}
+
+func (r Rest) sendMailHandler(c echo.Context) error {
+	req := new(AppUser.UserSendMail)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+
+	application := AppUser.UserApplication{
+		Repository: r.UserRepository,
+	}
+
+	u, err := application.FindUser(req.Email)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	ok := passhash.UserPassMach(u.Password, req.Password)
+	if !ok {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	err = mail.SendEmail(u.Email, u.Token)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 func (r Rest) Start() {
@@ -207,8 +254,12 @@ func (r Rest) Start() {
 
 	e.POST("/auth/signup", r.signupHandler)
 	e.POST("/auth/login", r.loginHandler)
+	e.POST("/auth/mailcheck", r.checkMailHandler)
+
 	e.GET("/items/list", r.getItemsHandler)
 	e.POST("/item", r.getItemHandler)
+
+	e.POST("/send/mail", r.sendMailHandler)
 
 	auth := e.Group("/auth")
 	auth.Use(middleware.JWTWithConfig(UserAuth.Config))
