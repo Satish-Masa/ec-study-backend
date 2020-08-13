@@ -8,12 +8,12 @@ import (
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-func SendEmail(email string) error {
+func SendEmail(email, token string) error {
 	from := mail.NewEmail("Check Email", "email@example.com")
 	subject := "Check your Email"
 	to := mail.NewEmail("Check Your Email", email)
 	plainTextContent := "This is login from!! "
-	htmlContent := "<strong>and easy to do anywhere, even with Go</strong>"
+	htmlContent := "This is the Login Form & Mail Check!!(http://localhost:8081/mailcheck/?token=" + token + ")"
 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
 	client := sendgrid.NewSendClient(config.Config.APIKey)
 	response, err := client.Send(message)
