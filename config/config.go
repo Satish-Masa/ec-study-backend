@@ -15,12 +15,14 @@ type ConfigList struct {
 	SQLDriver string
 
 	Port int
+
+	APIKey string
 }
 
 var Config ConfigList
 
 func Init() {
-	cfg, err := ini.Load("config.ini")
+	cfg, err := ini.Load("secret.ini")
 	if err != nil {
 		log.Printf("Failed to read file: %v", err)
 		os.Exit(1)
@@ -33,5 +35,6 @@ func Init() {
 		DbName:    cfg.Section("db").Key("dbname").String(),
 		SQLDriver: cfg.Section("db").Key("driver").String(),
 		Port:      cfg.Section("web").Key("port").MustInt(),
+		APIKey:    cfg.Section("sendapi").Key("apikey").String(),
 	}
 }

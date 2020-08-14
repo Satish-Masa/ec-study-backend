@@ -5,12 +5,14 @@ type Item struct {
 	Name        string `json: "name"`
 	Description string `json: "description"`
 	Price       int    `json: "price"`
+	Stock       int    `json: "stock"`
 }
 
-func NewItem(name, description string, price int) *Item {
+func NewItem(name, description string, price, stock int) *Item {
 	return &Item{
 		Name:        name,
 		Description: description,
 		Price:       price,
+		Stock:       stock,
 	}
 }

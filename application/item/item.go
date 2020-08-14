@@ -7,7 +7,8 @@ type ItemApplication struct {
 }
 
 type ItemRequest struct {
-	ID string `json: "id"`
+	ID     string `json: "id"`
+	Number int    `json: "number"`
 }
 
 func (a ItemApplication) GetItemList() ([]domainItem.Item, error) {
