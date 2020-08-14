@@ -1,9 +1,9 @@
 package item
 
-import domainItem "github.com/Satish-Masa/ec-backend/domain/item"
+import "github.com/Satish-Masa/ec-backend/domain/item"
 
 type ItemApplication struct {
-	Repository domainItem.ItemRepository
+	Repository item.ItemRepository
 }
 
 type ItemRequest struct {
@@ -11,10 +11,10 @@ type ItemRequest struct {
 	Number int    `json: "number"`
 }
 
-func (a ItemApplication) GetItemList() ([]domainItem.Item, error) {
+func (a ItemApplication) GetItemList() ([]item.Item, error) {
 	return a.Repository.Get()
 }
 
-func (a ItemApplication) FindItem(id int) (domainItem.Item, error) {
+func (a ItemApplication) FindItem(id int) (item.Item, error) {
 	return a.Repository.Find(id)
 }
