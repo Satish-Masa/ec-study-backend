@@ -2,16 +2,22 @@ package cart
 
 import (
 	domainCart "github.com/Satish-Masa/ec-backend/domain/cart"
-	"github.com/Satish-Masa/ec-backend/domain/item"
-	"github.com/Satish-Masa/ec-backend/domain/user"
 )
 
 type CartRepository struct {
 	Repository domainCart.CartRepository
 }
 
-func (a CartRepository) AddCart(item item.Item, user user.User) error {
-	return a.Repository.Add(item, user)
+type CartResponce struct {
+	Name        string `json: "name"`
+	Description string `json: "description"`
+	Price       int    `json: "price"`
+	Stock       int    `json: "stock"`
+	Number      int    `json: "number"`
+}
+
+func (a CartRepository) AddCart(iid, uid, num int) error {
+	return a.Repository.Add(iid, uid, num)
 }
 
 func (a CartRepository) GetCart(uid int) ([]domainCart.Cart, error) {
