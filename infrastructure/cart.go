@@ -2,8 +2,6 @@ package infrastructure
 
 import (
 	domainCart "github.com/Satish-Masa/ec-backend/domain/cart"
-	"github.com/Satish-Masa/ec-backend/domain/item"
-	"github.com/Satish-Masa/ec-backend/domain/user"
 	"github.com/jinzhu/gorm"
 )
 
@@ -15,10 +13,11 @@ func NewCartRepository(conn *gorm.DB) domainCart.CartRepository {
 	return &cartRepository{conn: conn}
 }
 
-func (c *cartRepository) Add(item item.Item, user user.User) error {
+func (c *cartRepository) Add(iid, uid, num int) error {
 	var cart domainCart.Cart
-	cart.ItemID = item.ID
-	cart.UserID = user.ID
+	cart.ItemID = iid
+	cart.UserID = uid
+	cart.Number = num
 	err := c.conn.Create(&cart).Error
 	if err != nil {
 		return err
