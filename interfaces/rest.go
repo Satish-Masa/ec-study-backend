@@ -6,28 +6,36 @@ import (
 	"net/http"
 	"strconv"
 
-	UserAuth "github.com/Satish-Masa/ec-backend/application/auth"
+	"github.com/Satish-Masa/ec-backend/application/auth"
 	"github.com/Satish-Masa/ec-backend/application/cart"
 	AppCart "github.com/Satish-Masa/ec-backend/application/cart"
-	passhash "github.com/Satish-Masa/ec-backend/application/hash"
+	hash "github.com/Satish-Masa/ec-backend/application/hash"
 	AppItem "github.com/Satish-Masa/ec-backend/application/item"
 	"github.com/Satish-Masa/ec-backend/application/mail"
+	AppOrdered "github.com/Satish-Masa/ec-backend/application/ordered"
 	"github.com/Satish-Masa/ec-backend/application/token"
 	AppUser "github.com/Satish-Masa/ec-backend/application/user"
 	"github.com/Satish-Masa/ec-backend/config"
 	domainCart "github.com/Satish-Masa/ec-backend/domain/cart"
 	domainItem "github.com/Satish-Masa/ec-backend/domain/item"
+	domainOrdered "github.com/Satish-Masa/ec-backend/domain/ordered"
 	domainUser "github.com/Satish-Masa/ec-backend/domain/user"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
 
 type Rest struct {
-	UserRepository domainUser.UserRepository
-	ItemRepository domainItem.ItemRepository
-	CartRepository domainCart.CartRepository
+	UserRepository  domainUser.UserRepository
+	ItemRepository  domainItem.ItemRepository
+	CartRepository  domainCart.CartRepository
+	OrderRepository domainOrdered.OrderedRepository
 }
 
+/* -------------------------------------------------------
+
+						User
+
+------------------------------------------------------- */
 func (r Rest) signupHandler(c echo.Context) error {
 	req := new(AppUser.UserCreateRequest)
 	if err := c.Bind(req); err != nil {
@@ -38,7 +46,7 @@ func (r Rest) signupHandler(c echo.Context) error {
 		}
 	}
 
-	pass, err := passhash.UserPassHash(req.Password)
+	pass, err := hash.UserPassHash(req.Password)
 	if err != nil {
 		log.Fatal(err)
 		return err
@@ -96,33 +104,15 @@ func (r Rest) loginHandler(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, resp)
 	}
 
-	ok := passhash.UserPassMach(u.Password, req.Password)
+	ok := hash.UserPassMach(u.Password, req.Password)
 	if !ok {
 		resp.Token = "not correct password"
 	}
 
-	token, err := UserAuth.FetchToken(&u)
+	token, err := auth.FetchToken(&u)
 	resp.Token = token
 
 	return c.JSON(http.StatusOK, resp)
-}
-
-func (r Rest) checkMailHandler(c echo.Context) error {
-	req := new(AppUser.UserMailCheck)
-	if err := c.Bind(req); err != nil {
-		return err
-	}
-
-	application := AppUser.UserApplication{
-		Repository: r.UserRepository,
-	}
-
-	err := application.CheckEmail(req.Token)
-	if err != nil {
-		return c.NoContent(http.StatusInternalServerError)
-	}
-
-	return c.NoContent(http.StatusOK)
 }
 
 func (r Rest) getItemsHandler(c echo.Context) error {
@@ -139,6 +129,11 @@ func (r Rest) getItemsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+/* -------------------------------------------------------
+
+						Item
+
+------------------------------------------------------- */
 func (r Rest) getItemHandler(c echo.Context) error {
 	req := new(AppItem.ItemRequest)
 	if err := c.Bind(req); err != nil {
@@ -163,8 +158,13 @@ func (r Rest) getItemHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+/* -------------------------------------------------------
+
+						Cart
+
+------------------------------------------------------- */
 func (r Rest) addCartHandler(c echo.Context) error {
-	user := UserAuth.Check(c)
+	user := auth.Check(c)
 
 	req := new(AppItem.ItemRequest)
 	if err := c.Bind(req); err != nil {
@@ -189,7 +189,7 @@ func (r Rest) addCartHandler(c echo.Context) error {
 }
 
 func (r Rest) cartListHandler(c echo.Context) error {
-	user := UserAuth.Check(c)
+	user := auth.Check(c)
 
 	application := AppCart.CartRepository{
 		Repository: r.CartRepository,
@@ -221,6 +221,42 @@ func (r Rest) cartListHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+/* -------------------------------------------------------
+
+						Ordered
+
+------------------------------------------------------- */
+func (r Rest) orderedHandler(c echo.Context) error {
+	user := auth.Check(c)
+
+	cart_application := AppCart.CartRepository{
+		Repository: r.CartRepository,
+	}
+	ordered_application := AppOrdered.OrderedRepository{
+		Repository: r.OrderRepository,
+	}
+
+	carts, err := cart_application.GetCart(user.ID)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	for _, cart := range carts {
+		err := ordered_application.AddOrdered(cart.ItemID, cart.UserID, cart.Number)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+	}
+
+	return c.NoContent(http.StatusOK)
+
+}
+
+/* -------------------------------------------------------
+
+						Others
+
+------------------------------------------------------- */
 func (r Rest) sendMailHandler(c echo.Context) error {
 	req := new(AppUser.UserSendMail)
 	if err := c.Bind(req); err != nil {
@@ -236,7 +272,7 @@ func (r Rest) sendMailHandler(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	ok := passhash.UserPassMach(u.Password, req.Password)
+	ok := hash.UserPassMach(u.Password, req.Password)
 	if !ok {
 		return c.NoContent(http.StatusInternalServerError)
 	}
@@ -249,26 +285,51 @@ func (r Rest) sendMailHandler(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+func (r Rest) checkMailHandler(c echo.Context) error {
+	req := new(AppUser.UserMailCheck)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+
+	application := AppUser.UserApplication{
+		Repository: r.UserRepository,
+	}
+
+	err := application.CheckEmail(req.Token)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
 func (r Rest) Start() {
 	e := echo.New()
+	a := e.Group("/auth")
+	a.Use(middleware.JWTWithConfig(auth.Config))
 
 	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	/* -----------------user------------------ */
 	e.POST("/auth/signup", r.signupHandler)
 	e.POST("/auth/login", r.loginHandler)
-	e.POST("/auth/mailcheck", r.checkMailHandler)
 
+	/* -----------------item------------------ */
 	e.GET("/items/list", r.getItemsHandler)
 	e.POST("/item", r.getItemHandler)
 
-	e.POST("/send/mail", r.sendMailHandler)
+	/* -----------------cart------------------ */
+	a.POST("/item/add", r.addCartHandler)
+	a.POST("/cart", r.cartListHandler)
 
-	auth := e.Group("/auth")
-	auth.Use(middleware.JWTWithConfig(UserAuth.Config))
-	auth.POST("/item/add", r.addCartHandler)
-	auth.POST("/cart", r.cartListHandler)
+	/* -----------------ordered------------------ */
+	a.POST("/ordered", r.orderedHandler)
+
+	/* -----------------other------------------ */
+	e.POST("/auth/mailcheck", r.checkMailHandler)
+	e.POST("/send/mail", r.sendMailHandler)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.Config.Port)))
 }
