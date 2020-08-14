@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	UserAuth "github.com/Satish-Masa/ec-backend/application/auth"
+	"github.com/Satish-Masa/ec-backend/application/cart"
 	AppCart "github.com/Satish-Masa/ec-backend/application/cart"
 	passhash "github.com/Satish-Masa/ec-backend/application/hash"
 	AppItem "github.com/Satish-Masa/ec-backend/application/item"
@@ -165,19 +166,18 @@ func (r Rest) getItemHandler(c echo.Context) error {
 func (r Rest) addCartHandler(c echo.Context) error {
 	user := UserAuth.Check(c)
 
-	item := new(domainItem.Item)
 	req := new(AppItem.ItemRequest)
 	if err := c.Bind(req); err != nil {
 		return err
 	}
 
-	item.ID, _ = strconv.Atoi(req.ID)
+	iid, _ := strconv.Atoi(req.ID)
 
 	capp := AppCart.CartRepository{
 		Repository: r.CartRepository,
 	}
 
-	err := capp.AddCart(*item, user)
+	err := capp.AddCart(iid, user.ID, req.Number)
 	if err != nil {
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
@@ -185,12 +185,10 @@ func (r Rest) addCartHandler(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, echo.Map{
-		"Create": "OK",
-	})
+	return c.NoContent(http.StatusOK)
 }
 
-func (r Rest) CartListHandler(c echo.Context) error {
+func (r Rest) cartListHandler(c echo.Context) error {
 	user := UserAuth.Check(c)
 
 	application := AppCart.CartRepository{
@@ -205,13 +203,19 @@ func (r Rest) CartListHandler(c echo.Context) error {
 	iapplication := AppItem.ItemApplication{
 		Repository: r.ItemRepository,
 	}
-	var resp []domainItem.Item
-	for _, cart := range carts {
-		item, err := iapplication.FindItem(cart.ItemID)
+	var resp []cart.CartResponce
+	for _, cl := range carts {
+		var r cart.CartResponce
+		item, err := iapplication.FindItem(cl.ItemID)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, nil)
+			return c.NoContent(http.StatusInternalServerError)
 		}
-		resp = append(resp, item)
+		r.Name = item.Name
+		r.Description = item.Description
+		r.Price = item.Price
+		r.Stock = item.Stock
+		r.Number = cl.Number
+		resp = append(resp, r)
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -264,7 +268,7 @@ func (r Rest) Start() {
 	auth := e.Group("/auth")
 	auth.Use(middleware.JWTWithConfig(UserAuth.Config))
 	auth.POST("/item/add", r.addCartHandler)
-	auth.POST("/cart", r.CartListHandler)
+	auth.POST("/cart", r.cartListHandler)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.Config.Port)))
 }
