@@ -1,7 +1,7 @@
 package infrastructure
 
 import (
-	domainItem "github.com/Satish-Masa/ec-backend/domain/item"
+	"github.com/Satish-Masa/ec-backend/domain/item"
 	"github.com/jinzhu/gorm"
 )
 
@@ -9,24 +9,24 @@ type itemRepository struct {
 	conn *gorm.DB
 }
 
-func NewItemRepository(conn *gorm.DB) domainItem.ItemRepository {
+func NewItemRepository(conn *gorm.DB) item.ItemRepository {
 	return &itemRepository{conn: conn}
 }
 
-func (i *itemRepository) Get() ([]domainItem.Item, error) {
-	var items []domainItem.Item
-	err := i.conn.Find(&items).Error
+func (i *itemRepository) Get() ([]item.Item, error) {
+	var units []item.Item
+	err := i.conn.Find(&units).Error
 	if err != nil {
-		return items, err
+		return units, err
 	}
-	return items, nil
+	return units, nil
 }
 
-func (i *itemRepository) Find(id int) (domainItem.Item, error) {
-	var item domainItem.Item
-	err := i.conn.First(&item, "id = ?", id).Error
+func (i *itemRepository) Find(id int) (item.Item, error) {
+	var unit item.Item
+	err := i.conn.First(&unit, "id = ?", id).Error
 	if err != nil {
-		return domainItem.Item{}, err
+		return item.Item{}, err
 	}
-	return item, nil
+	return unit, nil
 }
