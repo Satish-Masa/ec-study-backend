@@ -1,6 +1,8 @@
 package infrastructure
 
 import (
+	"log"
+
 	domainCart "github.com/Satish-Masa/ec-backend/domain/cart"
 	"github.com/jinzhu/gorm"
 )
@@ -32,4 +34,13 @@ func (c *cartRepository) Get(uid int) ([]domainCart.Cart, error) {
 		return carts, err
 	}
 	return carts, nil
+}
+
+func (c *cartRepository) Delete(uid, iid int) error {
+	log.Println(iid)
+	err := c.conn.Delete(&domainCart.Cart{}, "user_id = ? AND item_id = ?", uid, iid).Error
+	if err != nil {
+		return err
+	}
+	return nil
 }
