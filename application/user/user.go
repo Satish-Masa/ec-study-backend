@@ -41,10 +41,10 @@ func (a UserApplication) FindUser(email string) (user.User, error) {
 	return a.Repository.Find(email)
 }
 
-func (a UserApplication) FindEmail(email string) bool {
-	return a.Repository.FindEmail(email)
-}
-
 func (a UserApplication) CheckEmail(token string) error {
 	return a.Repository.CheckEmail(token)
+}
+
+func (a UserApplication) Validation(id int) (bool, error) {
+	return a.Repository.Validation(id)
 }
