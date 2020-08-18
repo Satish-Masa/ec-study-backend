@@ -1,5 +1,5 @@
 -- +migrate Up
-CREATE TABLE ordered {
+CREATE TABLE ordereds (
     item_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     number  INTEGER NOT NULL DEFAULT 1,
@@ -9,4 +9,4 @@ CREATE TABLE ordered {
     FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE
-}
+);
