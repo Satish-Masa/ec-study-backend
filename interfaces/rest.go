@@ -62,9 +62,10 @@ func (r Rest) signupHandler(c echo.Context) error {
 
 	resp := new(AppUser.UserCreateResponce)
 
-	ok := application.FindEmail(req.Email)
-	if ok {
+	_, err = application.FindUser(req.Email)
+	if err == nil {
 		resp.Result = "find user email"
+		log.Println(err)
 		return c.JSON(http.StatusBadRequest, resp)
 	}
 
@@ -115,6 +116,11 @@ func (r Rest) loginHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+/* -------------------------------------------------------
+
+						Item
+
+------------------------------------------------------- */
 func (r Rest) getItemsHandler(c echo.Context) error {
 	application := AppItem.ItemApplication{
 		Repository: r.ItemRepository,
@@ -129,11 +135,6 @@ func (r Rest) getItemsHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-/* -------------------------------------------------------
-
-						Item
-
-------------------------------------------------------- */
 func (r Rest) getItemHandler(c echo.Context) error {
 	req := new(AppItem.ItemRequest)
 	if err := c.Bind(req); err != nil {
@@ -210,6 +211,7 @@ func (r Rest) cartListHandler(c echo.Context) error {
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
+		r.ID = item.ID
 		r.Name = item.Name
 		r.Description = item.Description
 		r.Price = item.Price
@@ -219,6 +221,26 @@ func (r Rest) cartListHandler(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resp)
+}
+
+func (r Rest) deleteCartHandler(c echo.Context) error {
+	user := auth.Check(c)
+
+	req := new(AppCart.CartDeleteRequest)
+	if err := c.Bind(req); err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	cart_application := AppCart.CartRepository{
+		Repository: r.CartRepository,
+	}
+
+	err := cart_application.DeleteCart(user.ID, req.ID)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 /* -------------------------------------------------------
@@ -303,6 +325,25 @@ func (r Rest) checkMailHandler(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+func (r Rest) validationMailHandler(c echo.Context) error {
+	user := auth.Check(c)
+
+	user_application := AppUser.UserApplication{
+		Repository: r.UserRepository,
+	}
+
+	ok, err := user_application.Validation(user.ID)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	if ok {
+		return c.String(http.StatusOK, "true")
+	}
+
+	return c.String(http.StatusOK, "false")
+}
+
 func (r Rest) Start() {
 	e := echo.New()
 	a := e.Group("/auth")
@@ -323,6 +364,7 @@ func (r Rest) Start() {
 	/* -----------------cart------------------ */
 	a.POST("/item/add", r.addCartHandler)
 	a.POST("/cart", r.cartListHandler)
+	a.POST("/cart/delete", r.deleteCartHandler)
 
 	/* -----------------ordered------------------ */
 	a.POST("/ordered", r.orderedHandler)
@@ -330,6 +372,7 @@ func (r Rest) Start() {
 	/* -----------------other------------------ */
 	e.POST("/auth/mailcheck", r.checkMailHandler)
 	e.POST("/send/mail", r.sendMailHandler)
+	a.POST("/varidation", r.validationMailHandler)
 
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", config.Config.Port)))
 }
