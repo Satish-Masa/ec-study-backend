@@ -1,6 +1,7 @@
 package infrastructure
 
 import (
+	"github.com/Satish-Masa/ec-backend/domain/cart"
 	"github.com/Satish-Masa/ec-backend/domain/item"
 	"github.com/Satish-Masa/ec-backend/domain/ordered"
 	"github.com/jinzhu/gorm"
@@ -39,7 +40,15 @@ func (i *orderedRepository) Add(iid, uid, num int) error {
 	}
 
 	stock := unit.Stock - o.Number
-	if err := tx.Where(&unit).Update("stock", stock).Error; err != nil {
+	if stock < 0 {
+		stock = 0
+	}
+	if err := tx.Model(&unit).Update("stock", stock).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Where("user_id = ?", uid).Delete(&cart.Cart{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
