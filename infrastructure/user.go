@@ -30,15 +30,6 @@ func (i *userRepository) Find(email string) (domainUser.User, error) {
 	return user, nil
 }
 
-func (i *userRepository) FindEmail(email string) bool {
-	var user domainUser.User
-	err := i.conn.First(&user, "email = ?", email).Error
-	if err != nil {
-		return false
-	}
-	return true
-}
-
 func (i *userRepository) CheckEmail(token string) error {
 	var user domainUser.User
 	err := i.conn.First(&user, "token = ?", token).Error
@@ -51,4 +42,16 @@ func (i *userRepository) CheckEmail(token string) error {
 		return err
 	}
 	return nil
+}
+
+func (i *userRepository) Validation(id int) (bool, error) {
+	var user domainUser.User
+	err := i.conn.First(&user, "id=?", id).Error
+	if err != nil {
+		return false, err
+	}
+	if user.Validation {
+		return true, nil
+	}
+	return false, nil
 }
