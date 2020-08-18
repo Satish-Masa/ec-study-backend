@@ -3,7 +3,7 @@ package auth
 import (
 	"time"
 
-	domainUser "github.com/Satish-Masa/ec-backend/domain/user"
+	"github.com/Satish-Masa/ec-backend/domain/user"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -22,7 +22,7 @@ var Config = middleware.JWTConfig{
 	SigningKey: []byte(secret),
 }
 
-func createToken(u *domainUser.User) (string, error) {
+func createToken(u *user.User) (string, error) {
 	claims := &jwtCustomClaims{
 		u.ID,
 		u.Email,
@@ -41,7 +41,7 @@ func createToken(u *domainUser.User) (string, error) {
 	return tokenString, nil
 }
 
-func FetchToken(u *domainUser.User) (resp string, err error) {
+func FetchToken(u *user.User) (resp string, err error) {
 	resp, err = createToken(u)
 	if err != nil {
 		return "", err
@@ -50,8 +50,8 @@ func FetchToken(u *domainUser.User) (resp string, err error) {
 	return resp, nil
 }
 
-func Check(c echo.Context) domainUser.User {
-	var user domainUser.User
+func Check(c echo.Context) user.User {
+	var user user.User
 	u := c.Get("user").(*jwt.Token)
 	claims := u.Claims.(*jwtCustomClaims)
 	user.ID = claims.ID

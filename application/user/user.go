@@ -1,9 +1,9 @@
 package user
 
-import domainUser "github.com/Satish-Masa/ec-backend/domain/user"
+import "github.com/Satish-Masa/ec-backend/domain/user"
 
 type UserApplication struct {
-	Repository domainUser.UserRepository
+	Repository user.UserRepository
 }
 
 type UserCreateRequest struct {
@@ -33,18 +33,18 @@ type UserSendMail struct {
 	Password string `json: "password"`
 }
 
-func (a UserApplication) SaveUser(u *domainUser.User) error {
+func (a UserApplication) SaveUser(u *user.User) error {
 	return a.Repository.Save(u)
 }
 
-func (a UserApplication) FindUser(email string) (domainUser.User, error) {
+func (a UserApplication) FindUser(email string) (user.User, error) {
 	return a.Repository.Find(email)
-}
-
-func (a UserApplication) FindEmail(email string) bool {
-	return a.Repository.FindEmail(email)
 }
 
 func (a UserApplication) CheckEmail(token string) error {
 	return a.Repository.CheckEmail(token)
+}
+
+func (a UserApplication) Validation(id int) (bool, error) {
+	return a.Repository.Validation(id)
 }
