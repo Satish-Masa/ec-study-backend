@@ -20,7 +20,16 @@ func (c *cartRepository) Add(iid, uid, num int) error {
 	cart.ItemID = iid
 	cart.UserID = uid
 	cart.Number = num
-	err := c.conn.Create(&cart).Error
+
+	ok := c.conn.Where("user_id = ? AND item_id = ?", uid, iid).First(&domainCart.Cart{}).Error
+	if ok != nil {
+		err := c.conn.Create(&cart).Error
+		if err != nil {
+			return err
+		}
+	}
+
+	err := c.conn.Model(&cart).Update("number", num).Error
 	if err != nil {
 		return err
 	}
