@@ -174,11 +174,11 @@ func (r Rest) addCartHandler(c echo.Context) error {
 
 	iid, _ := strconv.Atoi(req.ID)
 
-	capp := AppCart.CartRepository{
+	cart_application := AppCart.CartRepository{
 		Repository: r.CartRepository,
 	}
 
-	err := capp.AddCart(iid, user.ID, req.Number)
+	err := cart_application.AddCart(iid, user.ID, req.Number)
 	if err != nil {
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
