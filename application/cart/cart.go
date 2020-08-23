@@ -32,3 +32,7 @@ func (a CartRepository) GetCart(uid int) ([]cart.Cart, error) {
 func (a CartRepository) DeleteCart(uid, iid int) error {
 	return a.Repository.Delete(uid, iid)
 }
+
+func (a CartRepository) SetCart(uid int) error {
+	return a.Repository.Set(uid)
+}
