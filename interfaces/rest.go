@@ -122,7 +122,7 @@ func (r Rest) loginHandler(c echo.Context) error {
 
 ------------------------------------------------------- */
 func (r Rest) getItemsHandler(c echo.Context) error {
-	application := AppItem.ItemApplication{
+	application := AppItem.ItemRepository{
 		Repository: r.ItemRepository,
 	}
 
@@ -146,7 +146,7 @@ func (r Rest) getItemHandler(c echo.Context) error {
 		return err
 	}
 
-	application := AppItem.ItemApplication{
+	application := AppItem.ItemRepository{
 		Repository: r.ItemRepository,
 	}
 
@@ -174,11 +174,11 @@ func (r Rest) addCartHandler(c echo.Context) error {
 
 	iid, _ := strconv.Atoi(req.ID)
 
-	capp := AppCart.CartRepository{
+	cart_application := AppCart.CartRepository{
 		Repository: r.CartRepository,
 	}
 
-	err := capp.AddCart(iid, user.ID, req.Number)
+	err := cart_application.AddCart(iid, user.ID, req.Number)
 	if err != nil {
 		return &echo.HTTPError{
 			Code:    http.StatusInternalServerError,
@@ -201,13 +201,13 @@ func (r Rest) cartListHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
-	iapplication := AppItem.ItemApplication{
+	item_application := AppItem.ItemRepository{
 		Repository: r.ItemRepository,
 	}
 	var resp []cart.CartResponce
 	for _, cl := range carts {
 		var r cart.CartResponce
-		item, err := iapplication.FindItem(cl.ItemID)
+		item, err := item_application.FindItem(cl.ItemID)
 		if err != nil {
 			return c.NoContent(http.StatusInternalServerError)
 		}
@@ -243,12 +243,27 @@ func (r Rest) deleteCartHandler(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+func (r Rest) orderedHandler(c echo.Context) error {
+	user := auth.Check(c)
+
+	cart_application := AppCart.CartRepository{
+		Repository: r.CartRepository,
+	}
+
+	err := cart_application.SetCart(user.ID)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
 /* -------------------------------------------------------
 
-						Ordered
+						buy
 
 ------------------------------------------------------- */
-func (r Rest) orderedHandler(c echo.Context) error {
+func (r Rest) buyHandler(c echo.Context) error {
 	user := auth.Check(c)
 
 	cart_application := AppCart.CartRepository{
@@ -272,6 +287,40 @@ func (r Rest) orderedHandler(c echo.Context) error {
 
 	return c.NoContent(http.StatusOK)
 
+}
+
+func (r Rest) buyListHandler(c echo.Context) error {
+	user := auth.Check(c)
+
+	ordered_application := AppOrdered.OrderedRepository{
+		Repository: r.OrderRepository,
+	}
+	item_application := AppItem.ItemRepository{
+		Repository: r.ItemRepository,
+	}
+
+	orders, err := ordered_application.GetOrdered(user.ID)
+	if err != nil {
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	var resp []AppOrdered.OrderedResponce
+	for _, cl := range orders {
+		var r AppOrdered.OrderedResponce
+		item, err := item_application.FindItem(cl.ItemID)
+		if err != nil {
+			return c.NoContent(http.StatusInternalServerError)
+		}
+		r.ID = item.ID
+		r.Name = item.Name
+		r.Description = item.Description
+		r.Price = item.Price
+		r.Stock = item.Stock
+		r.Number = cl.Number
+		resp = append(resp, r)
+	}
+
+	return c.JSON(http.StatusOK, resp)
 }
 
 /* -------------------------------------------------------
@@ -365,9 +414,11 @@ func (r Rest) Start() {
 	a.POST("/item/add", r.addCartHandler)
 	a.POST("/cart", r.cartListHandler)
 	a.POST("/cart/delete", r.deleteCartHandler)
+	a.POST("/cart/ordered", r.orderedHandler)
 
-	/* -----------------ordered------------------ */
-	a.POST("/ordered", r.orderedHandler)
+	/* -----------------buy------------------ */
+	a.POST("/buy", r.buyHandler)
+	a.POST("/ordered", r.buyListHandler)
 
 	/* -----------------other------------------ */
 	e.POST("/auth/mailcheck", r.checkMailHandler)
