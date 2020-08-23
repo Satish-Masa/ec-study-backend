@@ -55,3 +55,12 @@ func (i *orderedRepository) Add(iid, uid, num int) error {
 
 	return tx.Commit().Error
 }
+
+func (i *orderedRepository) Get(id int) ([]ordered.Ordered, error) {
+	var o []ordered.Ordered
+	err := i.conn.Find(&o).Where("user_id = ?", id).Error
+	if err != nil {
+		return o, err
+	}
+	return o, nil
+}
