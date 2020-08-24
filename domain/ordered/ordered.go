@@ -1,9 +1,12 @@
 package ordered
 
+import "time"
+
 type Ordered struct {
-	ItemID int `json: "item_id"`
-	UserID int `json: "user_id"`
-	Number int `json: "number"`
+	Created_at time.Time `json: "created_at"`
+	ItemID     int       `json: "item_id"`
+	UserID     int       `json: "user_id"`
+	Number     int       `json: "number"`
 }
 
 func NewOrdered(i, u, num int) *Ordered {
