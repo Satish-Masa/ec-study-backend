@@ -201,6 +201,11 @@ func (r Rest) cartListHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
+	if len(carts) == 0 {
+		log.Println("hello")
+		return c.NoContent(http.StatusNoContent)
+	}
+
 	item_application := AppItem.ItemRepository{
 		Repository: r.ItemRepository,
 	}
@@ -315,8 +320,8 @@ func (r Rest) buyListHandler(c echo.Context) error {
 		r.Name = item.Name
 		r.Description = item.Description
 		r.Price = item.Price
-		r.Stock = item.Stock
 		r.Number = cl.Number
+		r.Created_at = cl.Created_at
 		resp = append(resp, r)
 	}
 
