@@ -1,5 +1,6 @@
 -- +migrate Up
 CREATE TABLE ordereds (
+    created_at datetime default current_timestamp,
     item_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     number  INTEGER NOT NULL DEFAULT 1,
