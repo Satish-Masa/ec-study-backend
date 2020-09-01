@@ -12,12 +12,14 @@ import (
 	hash "github.com/Satish-Masa/ec-backend/application/hash"
 	AppItem "github.com/Satish-Masa/ec-backend/application/item"
 	"github.com/Satish-Masa/ec-backend/application/mail"
+	AppMail "github.com/Satish-Masa/ec-backend/application/mail"
 	AppOrdered "github.com/Satish-Masa/ec-backend/application/ordered"
 	"github.com/Satish-Masa/ec-backend/application/token"
 	AppUser "github.com/Satish-Masa/ec-backend/application/user"
 	"github.com/Satish-Masa/ec-backend/config"
 	domainCart "github.com/Satish-Masa/ec-backend/domain/cart"
 	domainItem "github.com/Satish-Masa/ec-backend/domain/item"
+	domainMail "github.com/Satish-Masa/ec-backend/domain/mail"
 	domainOrdered "github.com/Satish-Masa/ec-backend/domain/ordered"
 	domainUser "github.com/Satish-Masa/ec-backend/domain/user"
 	"github.com/labstack/echo"
@@ -29,6 +31,7 @@ type Rest struct {
 	ItemRepository  domainItem.ItemRepository
 	CartRepository  domainCart.CartRepository
 	OrderRepository domainOrdered.OrderedRepository
+	MailRepository  domainMail.MailRepository
 }
 
 /* -------------------------------------------------------
@@ -52,31 +55,40 @@ func (r Rest) signupHandler(c echo.Context) error {
 		return err
 	}
 
-	token := token.MakeToken()
+	u := domainUser.NewUser(req.Email, pass)
 
-	u := domainUser.NewUser(req.Email, pass, token)
-
-	application := AppUser.UserApplication{
+	user_application := AppUser.UserApplication{
 		Repository: r.UserRepository,
+	}
+	mail_applicaiton := AppMail.MailApplication{
+		Repository: r.MailRepository,
 	}
 
 	resp := new(AppUser.UserCreateResponce)
 
-	_, err = application.FindUser(req.Email)
+	_, err = user_application.FindUser(req.Email)
 	if err == nil {
 		resp.Result = "find user email"
 		log.Println(err)
 		return c.JSON(http.StatusBadRequest, resp)
 	}
 
-	err = application.SaveUser(u)
+	err = user_application.SaveUser(u)
 	if err != nil {
 		log.Fatal(err)
 		resp.Result = "failed to save user"
 		return c.JSON(http.StatusInternalServerError, resp)
 	}
 
-	err = mail.SendEmail(req.Email, token)
+	uu, _ := user_application.FindUser(req.Email)
+	token := token.MakeToken()
+	m := domainMail.NewMail(uu.ID, token)
+	err = mail_applicaiton.SaveMail(m)
+	if err != nil {
+		log.Println(err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+	err = AppMail.SendEmail(req.Email, token)
 	if err != nil {
 		log.Println(err)
 		resp.Result = "Not Send Email"
@@ -339,11 +351,14 @@ func (r Rest) sendMailHandler(c echo.Context) error {
 		return err
 	}
 
-	application := AppUser.UserApplication{
+	user_application := AppUser.UserApplication{
 		Repository: r.UserRepository,
 	}
+	mail_application := AppMail.MailApplication{
+		Repository: r.MailRepository,
+	}
 
-	u, err := application.FindUser(req.Email)
+	u, err := user_application.FindUser(req.Email)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
@@ -353,7 +368,13 @@ func (r Rest) sendMailHandler(c echo.Context) error {
 		return c.NoContent(http.StatusInternalServerError)
 	}
 
-	err = mail.SendEmail(u.Email, u.Token)
+	m, err := mail_application.FindMail(u.ID)
+	if err != nil {
+		log.Println(err)
+		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	err = mail.SendEmail(u.Email, m.Token)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
@@ -362,19 +383,24 @@ func (r Rest) sendMailHandler(c echo.Context) error {
 }
 
 func (r Rest) checkMailHandler(c echo.Context) error {
-	req := new(AppUser.UserMailCheck)
+	user := auth.Check(c)
+
+	req := new(AppMail.MailCheckRequest)
 	if err := c.Bind(req); err != nil {
 		return err
 	}
 
-	application := AppUser.UserApplication{
-		Repository: r.UserRepository,
+	mail_application := AppMail.MailApplication{
+		Repository: r.MailRepository,
 	}
 
-	err := application.CheckEmail(req.Token)
+	err := mail_application.CheckMail(req.Token, user.ID)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
+
+	token := token.MakeToken()
+	err = mail_application.UpdateMail(user.ID, token)
 
 	return c.NoContent(http.StatusOK)
 }
@@ -382,11 +408,11 @@ func (r Rest) checkMailHandler(c echo.Context) error {
 func (r Rest) validationMailHandler(c echo.Context) error {
 	user := auth.Check(c)
 
-	user_application := AppUser.UserApplication{
-		Repository: r.UserRepository,
+	mail_application := AppMail.MailApplication{
+		Repository: r.MailRepository,
 	}
 
-	ok, err := user_application.Validation(user.ID)
+	ok, err := mail_application.Validation(user.ID)
 	if err != nil {
 		return c.NoContent(http.StatusInternalServerError)
 	}
@@ -426,7 +452,7 @@ func (r Rest) Start() {
 	a.POST("/ordered", r.buyListHandler)
 
 	/* -----------------other------------------ */
-	e.POST("/auth/mailcheck", r.checkMailHandler)
+	a.POST("/mailcheck", r.checkMailHandler)
 	e.POST("/send/mail", r.sendMailHandler)
 	a.POST("/varidation", r.validationMailHandler)
 

@@ -24,10 +24,6 @@ type UserLoginResponce struct {
 	Token string `json: "token"`
 }
 
-type UserMailCheck struct {
-	Token string `json: "token"`
-}
-
 type UserSendMail struct {
 	Email    string `json: "email"`
 	Password string `json: "password"`
@@ -39,12 +35,4 @@ func (a UserApplication) SaveUser(u *user.User) error {
 
 func (a UserApplication) FindUser(email string) (user.User, error) {
 	return a.Repository.Find(email)
-}
-
-func (a UserApplication) CheckEmail(token string) error {
-	return a.Repository.CheckEmail(token)
-}
-
-func (a UserApplication) Validation(id int) (bool, error) {
-	return a.Repository.Validation(id)
 }

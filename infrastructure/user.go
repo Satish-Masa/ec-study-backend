@@ -29,29 +29,3 @@ func (i *userRepository) Find(email string) (domainUser.User, error) {
 	}
 	return user, nil
 }
-
-func (i *userRepository) CheckEmail(token string) error {
-	var user domainUser.User
-	err := i.conn.First(&user, "token = ?", token).Error
-	if err != nil {
-		return err
-	}
-	user.Validation = true
-	err = i.conn.Save(&user).Error
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (i *userRepository) Validation(id int) (bool, error) {
-	var user domainUser.User
-	err := i.conn.First(&user, "id=?", id).Error
-	if err != nil {
-		return false, err
-	}
-	if user.Validation {
-		return true, nil
-	}
-	return false, nil
-}
