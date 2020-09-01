@@ -57,11 +57,13 @@ func main() {
 	item := infrastructure.NewItemRepository(db)
 	cart := infrastructure.NewCartRepository(db)
 	ordered := infrastructure.NewOrderedRepository(db)
+	mail := infrastructure.NewMailRepository(db)
 	rest := &interfaces.Rest{
 		UserRepository:  user,
 		ItemRepository:  item,
 		CartRepository:  cart,
 		OrderRepository: ordered,
+		MailRepository:  mail,
 	}
 	rest.Start()
 }
