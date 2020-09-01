@@ -12,7 +12,7 @@ type OrderedRepository struct {
 
 type OrderedResponce struct {
 	ID          int       `json: "id"`
-	Created_at  time.Time `json: "created_at`
+	Created_at  time.Time `json: "created_at"`
 	Name        string    `json: "name"`
 	Description string    `json: "description"`
 	Price       int       `json: "price"`
