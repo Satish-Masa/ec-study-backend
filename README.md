@@ -1,4 +1,4 @@
-# Easy EC Site
+# Easy EC Site (BackEnd)
 
 ## 概要・目的
 簡易的なEC Siteを作成しました。このリポジトリはバックエンドです。  
